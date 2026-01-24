@@ -1,0 +1,2 @@
+config,cache_size,associativity,block_size,icache_hit_rate,dcache_hit_rate,l2_hit_rate,icache_hits,icache_misses,dcache_hits,dcache_misses,l2_hits,l2_misses
+size_64kB,64kB,2,64,99.67263679310186,97.0556089159739,0.478796169630643,173853,571,29304,889,7,1455
