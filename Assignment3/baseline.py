@@ -93,7 +93,7 @@ system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
 system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
 
 # Set up workload
-binary_path = 'configs/practice/Assignment3/Part2/benchmarks/hello_world'
+binary_path = 'configs/practice/Assignment3/hello_world'
 system.workload = SEWorkload.init_compatible(binary_path)
 
 # Create process

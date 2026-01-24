@@ -108,7 +108,7 @@ def run_simulation(config_name, cache_size, associativity, block_size):
     system = create_system(cache_size, associativity, block_size)
     
     # Set up workload
-    binary_path = 'configs/practice/Assignment3/Part2/benchmarks/hello_world'
+    binary_path = 'configs/practice/Assignment3/hello_world'
     system.workload = SEWorkload.init_compatible(binary_path)
     
     # Create process

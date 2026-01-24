@@ -109,7 +109,7 @@ def run_vm_simulation(config_name, page_size, tlb_size, tlb_assoc):
     system = create_system_with_vm(page_size, tlb_size, tlb_assoc)
     
     # Set up workload
-    binary_path = 'configs/practice/Assignment3/Part2/benchmarks/hello_world'
+    binary_path = 'configs/practice/Assignment3/hello_world'
     system.workload = SEWorkload.init_compatible(binary_path)
     
     # Create process
