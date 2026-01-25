@@ -72,4 +72,4 @@ All experiment results are stored in CSV format under [configs/practice/Assignme
 ![Screenshot](./results_v2/Screenshot%202026-01-25%20at%208.24.34 AM.png)
 - **Virtual memory experiments**: Individual result files (e.g., `page_4kB_vm_result.csv`, `tlb_64_vm_result.csv`) and a combined file `all_vm_experiments.csv`
 
-Each result file contains metrics including hit rates, miss counts, and performance statistics for the tested configurations.
+Each result file contains metrics including hit rates, miss counts, and performance statistics for the tested configurations. For further analysis, please refer to [./results_v2/cache_analysis.md](./results_v2/cache_analysis.md)
