@@ -27,12 +27,14 @@ optimization experiment:
 --output_dir="configs/practice/Assignment3/results_v2" \
 --binary="configs/practice/Assignment3/matrix_benchmark"
 ```
+![Screenshot](./results_v2/Screenshot%202026-01-25%20at%2010.31.33 AM.png)
 
 Run a single virtual memory experiment:
-```bash
-./build/X86/gem5.opt configs/practice/Assignment3/virtual_memory.py
-```
 
+```bash
+./build/X86/gem5.opt configs/practice/Assignment3/virtual_memory.py tlb_64
+```
+![Screenshot](./results_v2/Screenshot%202026-01-25%20at%2011.49.23 AM.png)
 Run all cache optimization experiments (batch mode, data stored under [results_v2](./results_v2/)):
 ```bash
 ./configs/practice/Assignment3/run_cache_experiments.sh
@@ -81,4 +83,20 @@ All experiment results are stored in CSV format under [configs/practice/Assignme
 ![Screenshot](./results_v2/Screenshot%202026-01-25%20at%208.24.34 AM.png)
 - **Virtual memory experiments**: Individual result files (e.g., `page_4kB_vm_result.csv`, `tlb_64_vm_result.csv`) and a combined file `all_vm_experiments.csv`
 
-Each result file contains metrics including hit rates, miss counts, and performance statistics for the tested configurations. For further analysis, please refer to [./results_v2/cache_analysis.md](./results_v2/cache_analysis.md) and [./results_v2/vm_analysis](./results_v2/vm_analysis.md)
+Each result file contains metrics including hit rates, miss counts, and performance statistics for the tested configurations. For further analysis, please refer to [./results_v2/cache_analysis.md](./results_v2/cache_analysis.md) and [./results_v2/vm_analysis.md](./results_v2/vm_analysis.md)
+
+## Conclusion
+
+The cache experiments successfully showed that proper sizing and configuration can deliver substantial performance gains. I achieved 40.1% improvement over baseline by optimizing L1 and L2 cache parameters. The sweet spot we found was 64KB L1 D-cache with 8-way associativity and 256KB L2 cache, which effectively captured the 128KB working set of our matrix benchmark. Interestingly, increasing cache sizes beyond these thresholds provided minimal returns, which taught us that bigger isn't always better in architecture design.
+
+The TLB experiments revealed an even more dramatic threshold effect. While 32 and 64-entry TLBs both struggled with around 77% hit rates, jumping to 128 entries suddenly achieved 99.997% hit rate with D-TLB misses dropping from 6.3 million to just 797. We could tell from this scenario that the real working set for our matrix operations needed roughly 100-120 TLB entries to avoid constant page table walks. However, we also learned that gem5's SE mode has significant limitations for VM experiments. The X86 architecture hardcodes page size at 4KB and uses fully associative TLBs, so only the TLB size parameter actually did anything. While initially frustrating, understanding these simulator limitations turned out to be just as valuable as the successful cache results. I can't wait to share this findout in our course forum.
+
+---
+
+## Troubleshooting and Methodology Refinement
+
+Initially, I ran all experiments using a simple hello_world program as the workload. The cache experiments completed successfully, but something felt wrong. Every configuration showed with less than 0.3% variation. After examining the stats.txt output more carefully, I realized the hello_world binary only accessed about 2-3KB of memory total. This meant even the smallest cache I tested could hold the entire working set comfortably, so naturally there was no differentiation between configurations.
+
+That's when I switched to the matrix multiplication benchmark, which has a much larger working set around 128KB. The difference was immediately obvious. now cache size changes produced measurable impacts on hit rates and simulation time. But then I noticed another issue: changing the block size parameter wasn't affecting anything either. After digging through the baseline_v2.py code, I discovered the block size wasn't actually being passed to the cache constructors. Once I fixed that bug and re-ran experiments, block size variations finally showed real differences.
+
+The VM experiments presented a different challenge entirely. No matter how I configured page size or TLB associativity, every result came back identical. At first I thought I had another configuration bug, but after extensive debugging and reading gem5 documentation, I learned that X86 SE mode simply doesn't support these parameters Page size is hardcoded to 4KB and TLBs are fully associative by default. I even attempted switching to Full System mode by running x86-ubuntu-run.py, which successfully booted Ubuntu Linux. However, integrating our custom matrix benchmark into FS mode proved too complex for this project's scope, requiring custom disk images and significantly longer simulation times.
