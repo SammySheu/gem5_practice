@@ -36,9 +36,12 @@ class L2Cache(Cache):
 def create_system_with_vm(page_size='4kB', tlb_size=64, tlb_assoc=4):
     """Create a gem5 system with virtual memory enabled.
     
-    Note: In SE (Syscall Emulation) mode, TLB configuration is limited.
-    TLBs are created automatically and use default parameters.
-    For full TLB control, full-system (FS) mode is required.
+    IMPORTANT LIMITATIONS FOR X86 IN SE MODE:
+    - Page size is HARDCODED to 4KB in X86 architecture (cannot be changed)
+    - TLB size CAN be configured (this is done below)
+    - TLB associativity is NOT configurable for X86TLB (fully associative by default)
+    
+    For full control over page size and TLB parameters, use ARM architecture or FS mode.
     """
     
     system = System()
@@ -55,8 +58,18 @@ def create_system_with_vm(page_size='4kB', tlb_size=64, tlb_assoc=4):
     # Create CPU with virtual memory support
     system.cpu = TimingSimpleCPU()
     
-    # Note: In SE mode, TLBs are created automatically by the CPU
-    # TLB configuration is handled internally for TimingSimpleCPU
+    # Configure TLBs - X86MMU creates itb (instruction TLB) and dtb (data TLB)
+    # We must configure them BEFORE the MMU is created
+    from m5.objects import X86TLB
+    
+    # Configure instruction TLB
+    system.cpu.mmu.itb.size = tlb_size
+    
+    # Configure data TLB  
+    system.cpu.mmu.dtb.size = tlb_size
+    
+    # NOTE: page_size parameter is ignored for X86 (hardcoded to 4KB)
+    # NOTE: tlb_assoc parameter is ignored for X86 (fully associative)
     
     # Create memory bus
     system.membus = SystemXBar()
@@ -103,13 +116,14 @@ def run_vm_simulation(config_name, page_size, tlb_size, tlb_assoc):
     
     print(f"\n{'='*60}")
     print(f"Virtual Memory Configuration: {config_name}")
-    print(f"Page Size: {page_size}, TLB Size: {tlb_size}, TLB Associativity: {tlb_assoc}")
+    print(f"Requested - Page Size: {page_size}, TLB Size: {tlb_size}, TLB Assoc: {tlb_assoc}")
+    print(f"X86 Limitations: Page=4KB(fixed), TLB Size={tlb_size}(configurable), Assoc=FA(fixed)")
     print(f"{'='*60}")
     
     system = create_system_with_vm(page_size, tlb_size, tlb_assoc)
     
     # Set up workload
-    binary_path = 'configs/practice/Assignment3/hello_world'
+    binary_path = 'configs/practice/Assignment3/matrix_benchmark'
     system.workload = SEWorkload.init_compatible(binary_path)
     
     # Create process
@@ -219,21 +233,28 @@ if __name__ == '__m5_main__':
     import argparse
     
     # Test configurations
+    # NOTE: For X86 architecture in SE mode:
+    # - Page size is HARDCODED to 4KB (page_size parameter has no effect)
+    # - TLB associativity is NOT configurable (tlb_assoc parameter has no effect)
+    # - Only TLB size can be varied
+    
     configurations = {
-        # Page size variations
+        # Page size variations - WARNING: These will NOT produce different results
+        # on X86 because page size is hardcoded to 4KB
         'page_4kB': ('4kB', 64, 4),
-        'page_8kB': ('8kB', 64, 4),
-        'page_16kB': ('16kB', 64, 4),
+        'page_8kB': ('8kB', 64, 4),   # Will use 4KB anyway
+        'page_16kB': ('16kB', 64, 4),  # Will use 4KB anyway
         
-        # TLB size variations
+        # TLB size variations - These WILL produce different results
         'tlb_32': ('4kB', 32, 4),
         'tlb_64': ('4kB', 64, 4),  # Baseline
         'tlb_128': ('4kB', 128, 4),
         
-        # TLB associativity variations
-        'tlb_assoc_2': ('4kB', 64, 2),
-        'tlb_assoc_4': ('4kB', 64, 4),  # Baseline
-        'tlb_assoc_8': ('4kB', 64, 8),
+        # TLB associativity variations - WARNING: These will NOT produce different results
+        # on X86 because TLBs are fully associative (assoc parameter has no effect)
+        'tlb_assoc_2': ('4kB', 64, 2),   # Will be fully assoc anyway
+        'tlb_assoc_4': ('4kB', 64, 4),   # Will be fully assoc anyway
+        'tlb_assoc_8': ('4kB', 64, 8),   # Will be fully assoc anyway
     }
     
     parser = argparse.ArgumentParser(description='Run virtual memory experiments')
@@ -249,8 +270,8 @@ if __name__ == '__m5_main__':
     
     # Save individual result
     import csv
-    os.makedirs(os.path.join(base_folder, 'results'), exist_ok=True)
-    result_file = f'{os.path.join(base_folder, "results")}/{config_name}_vm_result.csv'
+    os.makedirs(os.path.join(base_folder, 'results_v2'), exist_ok=True)
+    result_file = f'{os.path.join(base_folder, "results_v2")}/{config_name}_vm_result.csv'
     with open(result_file, 'w', newline='') as csvfile:
         fieldnames = ['config', 'page_size', 'tlb_size', 'tlb_assoc',
                      'itlb_hit_rate', 'dtlb_hit_rate', 'page_faults',

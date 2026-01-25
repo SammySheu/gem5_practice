@@ -1,0 +1,2 @@
+config,page_size,tlb_size,tlb_assoc,itlb_hit_rate,dtlb_hit_rate,page_faults,itlb_hits,itlb_misses,dtlb_hits,dtlb_misses
+page_4kB,4kB,64,4,99.99989582322716,77.18010014545375,0,81591999,85,21429991,6336222
