@@ -56,6 +56,9 @@ def create_system(cache_size='16kB', associativity=2, block_size=64):
     # Create memory bus
     system.membus = SystemXBar()
     
+    # Set system cache line size (block size)
+    system.cache_line_size = block_size
+    
     # Create cache hierarchy with specified parameters
     # L1 Instruction Cache
     system.cpu.icache = L1_ICache(size=cache_size, assoc=associativity)
@@ -108,7 +111,7 @@ def run_simulation(config_name, cache_size, associativity, block_size):
     system = create_system(cache_size, associativity, block_size)
     
     # Set up workload
-    binary_path = 'configs/practice/Assignment3/hello_world'
+    binary_path = 'configs/practice/Assignment3/matrix_benchmark'
     system.workload = SEWorkload.init_compatible(binary_path)
     
     # Create process
