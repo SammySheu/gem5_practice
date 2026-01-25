@@ -24,11 +24,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""Caches with options for a simple gem5 configuration script
+"""Configurable cache classes for gem5 cache optimization experiments
 
-This file contains L1 I/D and L2 caches to be used in the simple
-gem5 configuration script. It uses the SimpleOpts wrapper to set up command
-line options from each individual class.
+This file contains L1 I/D and L2 cache classes with full command-line
+configurability for size, associativity, and block size parameters.
+All cache parameters can be specified via command-line arguments.
 """
 
 import m5
@@ -44,8 +44,9 @@ from common import SimpleOpts
 
 
 class L1Cache(Cache):
-    """Simple L1 Cache with default values"""
+    """Configurable L1 Cache with command-line options"""
 
+    # Default parameters
     assoc = 2
     tag_latency = 2
     data_latency = 2
@@ -53,9 +54,22 @@ class L1Cache(Cache):
     mshrs = 4
     tgts_per_mshr = 20
 
+    # Add command-line options for L1 cache parameters
+    SimpleOpts.add_option(
+        "--l1_assoc", 
+        help="L1 cache associativity. Default: 2"
+    )
+    SimpleOpts.add_option(
+        "--cache_line_size",
+        help="Cache line/block size in bytes. Default: 64"
+    )
+
     def __init__(self, options=None):
         super().__init__()
-        pass
+        if options:
+            # Set associativity if specified
+            if hasattr(options, 'l1_assoc') and options.l1_assoc:
+                self.assoc = int(options.l1_assoc)
 
     def connectBus(self, bus):
         """Connect this cache to a memory-side bus"""
@@ -68,20 +82,20 @@ class L1Cache(Cache):
 
 
 class L1ICache(L1Cache):
-    """Simple L1 instruction cache with default values"""
+    """Configurable L1 instruction cache"""
 
     # Set the default size
     size = "16KiB"
 
     SimpleOpts.add_option(
-        "--l1i_size", help=f"L1 instruction cache size. Default: {size}"
+        "--l1i_size", 
+        help=f"L1 instruction cache size. Default: {size}"
     )
 
     def __init__(self, opts=None):
         super().__init__(opts)
-        if not opts or not opts.l1i_size:
-            return
-        self.size = opts.l1i_size
+        if opts and hasattr(opts, 'l1i_size') and opts.l1i_size:
+            self.size = opts.l1i_size
 
     def connectCPU(self, cpu):
         """Connect this cache's port to a CPU icache port"""
@@ -89,20 +103,20 @@ class L1ICache(L1Cache):
 
 
 class L1DCache(L1Cache):
-    """Simple L1 data cache with default values"""
+    """Configurable L1 data cache"""
 
     # Set the default size
     size = "64KiB"
 
     SimpleOpts.add_option(
-        "--l1d_size", help=f"L1 data cache size. Default: {size}"
+        "--l1d_size", 
+        help=f"L1 data cache size. Default: {size}"
     )
 
     def __init__(self, opts=None):
         super().__init__(opts)
-        if not opts or not opts.l1d_size:
-            return
-        self.size = opts.l1d_size
+        if opts and hasattr(opts, 'l1d_size') and opts.l1d_size:
+            self.size = opts.l1d_size
 
     def connectCPU(self, cpu):
         """Connect this cache's port to a CPU dcache port"""
@@ -110,7 +124,7 @@ class L1DCache(L1Cache):
 
 
 class L2Cache(Cache):
-    """Simple L2 Cache with default values"""
+    """Configurable L2 Cache with command-line options"""
 
     # Default parameters
     size = "256KiB"
@@ -121,13 +135,26 @@ class L2Cache(Cache):
     mshrs = 20
     tgts_per_mshr = 12
 
-    SimpleOpts.add_option("--l2_size", help=f"L2 cache size. Default: {size}")
+    # Add command-line options for L2 cache parameters
+    SimpleOpts.add_option(
+        "--l2_size", 
+        help=f"L2 cache size. Default: {size}"
+    )
+    SimpleOpts.add_option(
+        "--l2_assoc", 
+        help=f"L2 cache associativity. Default: {assoc}"
+    )
 
     def __init__(self, opts=None):
         super().__init__()
-        if not opts or not opts.l2_size:
-            return
-        self.size = opts.l2_size
+        if opts:
+            # Set size if specified
+            if hasattr(opts, 'l2_size') and opts.l2_size:
+                self.size = opts.l2_size
+            
+            # Set associativity if specified
+            if hasattr(opts, 'l2_assoc') and opts.l2_assoc:
+                self.assoc = int(opts.l2_assoc)
 
     def connectCPUSideBus(self, bus):
         self.cpu_side = bus.mem_side_ports
