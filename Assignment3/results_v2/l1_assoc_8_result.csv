@@ -1,0 +1,2 @@
+config,l1i_size,l1d_size,l2_size,l1_assoc,l2_assoc,cache_line_size,sim_ticks,sim_seconds,icache_hits,icache_misses,icache_hit_rate,dcache_hits,dcache_misses,dcache_hit_rate,l2_hits,l2_misses,l2_hit_rate
+l1_assoc_8,16KiB,64KiB,256KiB,8,8,64,249465106000,0.249465,81591082,1002,100.00,26609189,1140813,95.89,1100436,41386,96.38
