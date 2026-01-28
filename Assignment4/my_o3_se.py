@@ -115,17 +115,24 @@ system.system_port = system.membus.cpu_side_ports
 # 4) Workload (SE mode)
 # -----------------------
 cmd = [args.cmd] + ([a for a in args.args.split()] if args.args else [])
-process = Process()
-process.cmd = cmd
 
 system.workload = SEWorkload.init_compatible(args.cmd)
 
 # If threads>1, create one process per thread (simplest SMT demo)
-# You can also run different binaries per thread later.
+# Each thread needs its own Process instance to avoid memory mapping conflicts
 if args.threads == 1:
+    process = Process()
+    process.cmd = cmd
     system.cpu.workload = process
 else:
-    system.cpu.workload = [process for _ in range(args.threads)]
+    # Create separate Process instances for each thread with unique PIDs
+    processes = []
+    for i in range(args.threads):
+        p = Process()
+        p.cmd = cmd
+        p.pid = 100 + i  # Assign unique PIDs starting from 100
+        processes.append(p)
+    system.cpu.workload = processes
 
 system.cpu.createThreads()
 
