@@ -10,14 +10,9 @@ This project implements a low-power microprocessor architecture for edge computi
 
 - [Project Overview](#project-overview)
 - [Building and Running](#building-and-running)
-- [Architecture Configurations](#architecture-configurations)
-- [Power Modeling](#power-modeling)
 - [Workload Characteristics](#workload-characteristics)
 - [Results Analysis](#results-analysis)
-- [Phase 2 Implementation Notes](#phase-2-implementation-notes)
-- [Advanced Usage](#advanced-usage)
-- [Troubleshooting](#troubleshooting)
-- [References](#references)
+- [Online Resources](@online-resources)
 
 ---
 
@@ -169,7 +164,7 @@ This generates:
 
 ---
 
-### Online Resources
+## Online Resources
 
 **gem5 Documentation**:
 - gem5 Official Documentation: https://www.gem5.org/documentation/
