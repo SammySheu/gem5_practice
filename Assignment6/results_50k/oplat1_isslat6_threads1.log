@@ -1,0 +1,36 @@
+Global frequency set at 1000000000000 ticks per second
+src/mem/dram_interface.cc:690: warn: DRAM device capacity (8192 Mbytes) does not match the address range assigned (512 Mbytes)
+src/base/statistics.hh:279: warn: One of the stats is a legacy stat. Legacy stat is a stat that does not belong to any statistics::Group. Legacy stat is deprecated.
+src/base/statistics.hh:279: warn: One of the stats is a legacy stat. Legacy stat is a stat that does not belong to any statistics::Group. Legacy stat is deprecated.
+src/cpu/minor/execute.cc:164: warn: No functional unit for OpClass SimdUnitStrideSegmentedLoad
+src/cpu/minor/execute.cc:164: warn: No functional unit for OpClass SimdUnitStrideSegmentedStore
+src/cpu/minor/execute.cc:164: warn: No functional unit for OpClass SimdUnitStrideSegmentedFaultOnlyFirstLoad
+src/cpu/minor/execute.cc:164: warn: No functional unit for OpClass SimdStrideSegmentedLoad
+src/cpu/minor/execute.cc:164: warn: No functional unit for OpClass SimdStrideSegmentedStore
+system.remote_gdb: Listening for connections on port 7000
+gem5 Simulator System.  https://www.gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 25.1.0.0
+gem5 compiled Feb 15 2026 19:45:33
+gem5 started Feb 15 2026 19:50:57
+gem5 executing on nba-vbot, pid 1092015
+command line: /home/sammy/gem5/build/ARM/gem5.opt --outdir=/home/sammy/gem5/configs/practice/Assignment6/results_50k/oplat1_isslat6_threads1 /home/sammy/gem5/configs/practice/Assignment6/multicore_minor_daxpy.py --num-cores 1 --op-lat 1 --issue-lat 6 --binary /home/sammy/gem5/configs/practice/Assignment6/daxpy_mt_scalable_arm --array-size 50000
+
+=== DAXPY Simulation ===
+Cores: 1
+FloatSimdFU: opLat=1, issueLat=6
+Array size: 50000
+========================
+src/sim/syscall_emul.cc:86: warn: ignoring syscall set_robust_list(...)
+src/sim/syscall_emul.cc:97: warn: ignoring syscall rseq(...)
+      (further warnings will be suppressed)
+src/sim/mem_state.cc:443: info: Increasing stack size by one page.
+src/sim/syscall_emul.hh:1127: warn: readlink() called on '/proc/self/exe' may yield unexpected results in various settings.
+      Returning '/home/sammy/gem5/configs/practice/Assignment6/daxpy_mt_scalable_arm'
+src/arch/arm/insts/pseudo.cc:174: warn: 	instruction 'bti' unimplemented
+src/sim/syscall_emul.cc:86: warn: ignoring syscall mprotect(...)
+DAXPY (scalable): 1 threads, 50000 elements
+DAXPY completed successfully. Validation passed.
+
+Simulation done: exiting with last active thread context
