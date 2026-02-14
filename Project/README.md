@@ -1,172 +1,128 @@
-# Edge Pre-processing Microprocessor - gem5 Implementation
+# Project - Edge Pre-processing Microprocessor with DVFS
 
-**Course Project: Designing and Implementing a Microprocessor Using gem5 Simulation Software**
+Simulates an edge computing sensor pipeline on ARM, with explicit power modeling and DVFS (Dynamic Voltage and Frequency Scaling) optimization.
 
-This project implements a low-power microprocessor architecture for edge computing applications, comparing in-order (MinorCPU) and out-of-order (O3CPU) execution strategies with comprehensive power modeling using gem5's MathExprPowerModel framework.
+## Workload
 
----
+The workload (`workloads/edge_preprocessing.c`) models a multi-sensor edge node that:
+1. Generates data from 16 sensors × 1024 samples
+2. Applies a moving-average filter (compute-intensive)
+3. Performs anomaly detection, cross-sensor fusion, and normalization
+4. Runs 3 rounds of the full pipeline
 
-## Table of Contents
+Two binaries are used:
+- `edge_preprocessing_arm` — plain binary for static DVFS experiments
+- `edge_preprocessing_dvfs_arm` — instrumented with `m5_work_begin()` pseudo-instructions at each phase boundary, enabling dynamic DVFS switching
 
-- [Project Overview](#project-overview)
-- [Building and Running](#building-and-running)
-- [Workload Characteristics](#workload-characteristics)
-- [Results Analysis](#results-analysis)
-- [Online Resources](@online-resources)
-
----
-
-## Project Overview
-
-### Target Application: Edge Computing Pre-processing
-
-Edge computing shifts data processing from centralized cloud platforms to energy-constrained devices near sensors and actuators. This project targets an **edge pre-processing server** that sits between sensor arrays and the cloud, responsible for:
-
-- **Reducing bandwidth**: Lightweight sensor fusion and filtering
-- **Improving responsiveness**: Processing data closer to the source
-- **Power efficiency**: Operating under strict power budgets
-
-### Design Space Exploration
-
-The project compares **two CPU architectures** across **two cache configurations**:
-
-- **CPU Models**: MinorCPU (in-order) vs. O3CPU (out-of-order)
-- **Cache Hierarchy**: L1 only vs. L1+L2
-- **Total configurations**: 4 (2 × 2)
-
----
-
-## Building and Running
-
-### Prerequisites
-1. If gem5 hasn't been built yet, please refer to [REPO README](../README.md)
-
-2. As I decided to switch from X86 to ARM, we have to make sure it has ARM executable file
-   ```bash
-   cd /gem5
-   scons build/ARM/gem5.opt -j$(nproc)
-   ```
-
-3. **Compile the workload binary:**
-   
-   ```bash
-
-   aarch64-linux-gnu-gcc -O2 -static configs/practice/Project/workloads/edge_preprocessing.c \
-       -o configs/practice/Project/workloads/edge_preprocessing_arm -lm
-   ```
-
-### Running Simulations
-
-#### Manually Run Simulation
-**Minor Config**
-```bash
-./build/ARM/gem5.opt \
-    --outdir=configs/practice/Project/m5out_minor_l2 \
-    configs/practice/Project/edge_power_config.py \
-    --cpu-type=minor \
-    --stat-freq=0.0001 \
-    --l2-cache \
-    --binary=configs/practice/Project/workloads/edge_preprocessing_arm
-```
-
-**O3 Config**
-```bash
-./build/ARM/gem5.opt \
-    --outdir=configs/practice/Project/m5out_o3_l2 \
-    configs/practice/Project/edge_power_config.py \
-    --cpu-type=o3 \
-    --stat-freq=0.0001 \
-    --l2-cache \
-    --binary=configs/practice/Project/workloads/edge_preprocessing_arm
-```
-
----
-## Workload Characteristics
-
-### Edge Pre-processing Pipeline
-
-The benchmark (`edge_preprocessing.c`) implements a realistic edge computing workload:
-
-1. **Generate Sensor Data**: 8 sensors × 1024 samples (simulating IoT devices)
-2. **Moving Average Filter**: Streaming memory access with small sliding window
-3. **Anomaly Detection**: Branch-intensive threshold comparisons
-4. **Normalization**: Floating-point division and multiplication
-5. **Statistical Aggregation**: Min/max/sum computations with loop dependencies
-
----
-
-## Results Analysis
-
-### Output Directories
-
-After running simulations, results are stored in:
-
-```
-configs/practice/Project/
-├── m5out_minor_l1/     # MinorCPU, L1 only
-├── m5out_minor_l2/     # MinorCPU, L1+L2
-├── m5out_o3_l1/        # O3CPU, L1 only
-└── m5out_o3_l2/        # O3CPU, L1+L2
-```
-
-Each directory contains:
-- **stats.txt**: Performance, cache, branch, and power statistics
-- **config.ini**: Full configuration parameters
-- **config.json**: JSON configuration export
-
-
-#### Cache Performance
+## Building the Workload Binaries
 
 ```bash
-# Extract L1 D-cache miss rate
-grep "system.cpu.dcache.overallMissRate" m5out_*/stats.txt
+# Static binary (used by run_all.sh)
+aarch64-linux-gnu-gcc -static -O2 -o configs/practice/Project/workloads/edge_preprocessing_arm \
+    configs/practice/Project/workloads/edge_preprocessing.c -lm
 
-# Extract L1 I-cache miss rate
-grep "system.cpu.icache.overallMissRate" m5out_*/stats.txt
-
-# Extract L2 cache statistics (if enabled)
-grep "system.l2.overallMissRate" m5out_*/stats.txt
+# DVFS-instrumented binary (used by run_dvfs_dynamic.sh)
+aarch64-linux-gnu-gcc -static -O2 \
+    -I/home/sammy/gem5/include \
+    -o configs/practice/Project/workloads/edge_preprocessing_dvfs_arm \
+    configs/practice/Project/workloads/edge_preprocessing_dvfs.c -lm
 ```
 
-#### Branch Prediction
+## Experiment 1: Static DVFS Sweep (12 configurations)
+
+Runs all combinations of CPU type × cache hierarchy × DVFS level.
+
+**Architecture configurations:**
+| CPU | Cache | Output prefix |
+|-----|-------|---------------|
+| MinorCPU (in-order) | L1 only | `m5out_minor_l1` |
+| MinorCPU (in-order) | L1 + L2 | `m5out_minor_l2` |
+| O3CPU (out-of-order) | L1 only | `m5out_o3_l1` |
+| O3CPU (out-of-order) | L1 + L2 | `m5out_o3_l2` |
+
+**DVFS operating points:**
+| Level | Frequency | Voltage | Label |
+|-------|-----------|---------|-------|
+| P0 | 2 GHz | 1.2 V | High Performance |
+| P1 | 1.2 GHz | 1.0 V | Balanced |
+| P2 | 600 MHz | 0.8 V | Low Power |
 
 ```bash
-# Extract Branch misprediction rate
-grep "branchPred.condPredicted" m5out_*/stats.txt
-grep "branchPred.condIncorrect" m5out_*/stats.txt
+cd /home/sammy/gem5/configs/practice/Project
+./run_all.sh
 ```
 
-#### Power Analysis
+Results are written to `m5out_<arch>_perf<N>/`. Run a single configuration manually:
 
 ```bash
-# Extract CPU power state distribution
-grep "system.cpu.power_state.stateResidency" m5out_*/stats.txt
-
-# Extract Cache power states
-grep "dcache.power_state" m5out_*/stats.txt
+# Example: O3CPU with L2 cache at balanced DVFS
+../../../build/ARM/gem5.opt --outdir=m5out_o3_l2_perf1 edge_power_config.py \
+    --cpu-type=o3 --binary=workloads/edge_preprocessing_arm \
+    --l2-cache --perf-level=1
 ```
 
-
-### Analyzing Results
-
-Base on above extract commands, I write a script to compare the results.
+Analyze all 12 results:
 
 ```bash
-python analyze_results.py
+python3 analyze_results.py
 ```
 
-This generates:
-- Performance comparison (IPC, execution time)
-- Cache statistics (hit rates, miss rates)
-- Branch prediction accuracy
-- Power consumption estimates
-- Energy-delay product (EDP) analysis
+## Experiment 2: Dynamic Phase-Aware DVFS (8 configurations)
 
----
+Compares running at a fixed P0 (2 GHz/1.2 V) against a phase-aware policy that switches V/f at each pipeline phase boundary.
 
-## Online Resources
+**Dynamic DVFS policy:**
+| Phase | Name | DVFS Level |
+|-------|------|------------|
+| 0 | Generate Data | P1 Balanced |
+| 1 | Moving Avg Filter | P0 High-Perf |
+| 2 | Anomaly Detection | P2 Low-Power |
+| 3 | Cross-Sensor Fusion | P2 Low-Power |
+| 4 | Aggregate Stats | P2 Low-Power |
+| 5 | Normalize Data | P2 Low-Power |
+| 6 | Per-Sensor Stats | P1 Balanced |
 
-**gem5 Documentation**:
-- gem5 Official Documentation: https://www.gem5.org/documentation/
-- gem5 ARM Power Modelling Guide: https://www.gem5.org/documentation/learning_gem5/part2/arm_power_modelling/
-- gem5 Learning Resources: https://www.gem5.org/documentation/learning_gem5/
+Hypothesis: only the filter phase needs full speed; all other phases are memory-bound or lightweight enough to run at reduced V/f.
+
+```bash
+cd /home/sammy/gem5/configs/practice/Project
+./run_dvfs_dynamic.sh
+```
+
+Results are written to `m5out_<arch>_static_p0/` and `m5out_<arch>_dynamic/`. Run a single pair manually:
+
+```bash
+# Static P0 baseline
+../../../build/ARM/gem5.opt --outdir=m5out_minorcpu_l1_static_p0 edge_power_config.py \
+    --cpu-type=minor --binary=workloads/edge_preprocessing_arm --perf-level=0
+
+# Dynamic DVFS
+../../../build/ARM/gem5.opt --outdir=m5out_minorcpu_l1_dynamic edge_power_dvfs_dynamic.py \
+    --cpu-type=minor --binary=workloads/edge_preprocessing_dvfs_arm
+```
+
+Analyze the static vs dynamic comparison:
+
+```bash
+python3 analyze_dvfs_dynamic.py
+```
+
+## Key Design Decisions
+
+| Aspect | Static config (`edge_power_config.py`) | Dynamic config (`edge_power_dvfs_dynamic.py`) |
+|--------|----------------------------------------|-----------------------------------------------|
+| DVFS control | Fixed `--perf-level` at startup | Per-phase switching via `DVFSHandler` |
+| Binary | `edge_preprocessing_arm` (plain) | `edge_preprocessing_dvfs_arm` (instrumented) |
+| Phase detection | N/A | `m5_work_begin()` triggers `workbegin` exit events |
+| Stats | Periodic dumps (every 1 ms sim-time) | Periodic dumps across all phases |
+| Power model | `MathExprPowerModel` on CPU + caches | Same power model |
+
+## Cache Hierarchy
+
+| Cache | Size | Associativity | Latency |
+|-------|------|---------------|---------|
+| L1 I-cache | 16 KB | 2-way | 1 cycle |
+| L1 D-cache | 32 KB | 4-way | 2 cycles |
+| L2 (optional) | 256 KB | 8-way | 12 cycles |
+| DRAM | 4 GB (DDR4-2400) | — | — |
+
